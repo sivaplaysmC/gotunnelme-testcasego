@@ -1,0 +1,31 @@
+name: Go Build 
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.17.5' # The Go version to download (if necessary) and use.
+    - name: build server
+      shell: bash
+      run: |
+        APP_PREFIX=gotunnelme
+        bash go-build.bash $APP_PREFIX
+        for i in `ls $APP_PREFIX-*` ; do gzip -9 $i ; done
+        ls -ltr
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          gotunnelme-windows-amd64.gz
+          gotunnelme-linux-arm64.gz
+          gotunnelme-linux-amd64.gz
+          gotunnelme-darwin-amd64.gz
+          gotunnelme-darwin-arm64.gz
