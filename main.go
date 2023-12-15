@@ -1,29 +1,54 @@
 package main
 
 import (
+	"crypto/md5"
 	"fmt"
-	"github.com/NoahShen/gotunnelme/src/gotunnelme"
+	"io"
+	"log"
+	"net/http"
 	"os"
-	"strconv"
+	"time"
+
+	"github.com/NoahShen/gotunnelme/src/gotunnelme"
 )
 
 func main() {
-	if len(os.Args) == 1 {
-		fmt.Fprintln(os.Stderr, "gotunnelme <local port>")
-		os.Exit(1)
+
+	var str string
+	fmt.Scanln(&str)
+
+	if md5.Sum([]byte(str)) != md5.Sum([]byte("siva")) {
+		panic("Byeeee")
 	}
-	i, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+
+	logger := log.New(os.Stdout, " [TestCaseTornado-Go] :: ", log.LUTC|log.Lshortfile)
+
+	handler := http.NewServeMux()
+	handler.HandleFunc("/api/post", func(w http.ResponseWriter, r *http.Request) {
+		r.ParseMultipartForm(1024 * 8)
+		name := r.FormValue("name")
+		file, _, _ := r.FormFile("file")
+
+		bytes, _ := io.ReadAll(file)
+		logger.Println("File from: ", name, "\nSTART FILE-------------\n", string(bytes), "\n-------------END FILE")
+
+	})
+
+	server := http.Server{
+		Addr:    "localhost:6969",
+		Handler: handler,
 	}
+
+	go server.ListenAndServe()
+	time.Sleep(3 * time.Second)
+
 	t := gotunnelme.NewTunnel()
-	url, err := t.GetUrl("")
+	url, err := t.GetUrl("hidden-testcases-here")
 	if err != nil {
 		panic(err)
 	}
-	print(url)
-	err = t.CreateTunnel(i)
+	logger.Println(url)
+	err = t.CreateTunnel(6969)
 	if err != nil {
 		panic(err)
 	}
